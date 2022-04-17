@@ -1,10 +1,15 @@
 # ReverseShell  
 
-### Description
+## Description
 A custom reverse shell program written in Python.  
 There are two programs: `casey_listenr.py` and`casey_agent.py`.  
+
+### casey_listener
 casey_listener is a program that listens for incoming connection. It sends commands to casey_agent, and recieves the command results sent from casey_agent.  
+
+### casey_agent
 casey_agent is a program that get's stored in the target machine. It recieves the commands from casey_listener, executes the commands on the target machine, and sends the result to casey_listener.  
+
 So far, they can be used to execute commands, download and upload files.  
 Tested on Windows 10, and the programs are still in development.  
 This is to be used for educational and security testing purposes only and I'm not responsible for the misuse of this program.  
