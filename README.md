@@ -20,3 +20,17 @@ This is to be used for educational and security testing purposes only and I'm no
   `python3 casey_listener.py`  
 3. Start casey_agent on the target machine.  
   `python3 casey_agent.py` 
+
+### Usage Example
+<b> V Starting casey_listener on the attacker machine V </b>  
+![CaseyListener_Started](https://user-images.githubusercontent.com/83319068/163905544-5d4c0471-07fb-4ce4-ad10-3ea35d547ac9.png)
+
+<b> V Starting casey_agent on the target machine (victim) & Obtaining a shell V </b>  
+![CaseyAgent_Started](https://user-images.githubusercontent.com/83319068/163905769-cb6b4eb5-fe1c-4ad1-9a1c-1fd14640a848.png)  
+![CaseyListener_Connected](https://user-images.githubusercontent.com/83319068/163905927-f0f8e936-6e0e-4852-8057-fbf5316b21ad.png)
+
+<b> V File Upload V </b>  
+![Casey_UploadTest](https://user-images.githubusercontent.com/83319068/163906045-4380c65f-ec92-418b-a51e-aea1a5cba62c.png)
+
+<b> V File Download V </b>  
+![Casey_DownloadTest](https://user-images.githubusercontent.com/83319068/163906072-2985cc60-092b-4579-9829-c517acb9c8d3.png)
