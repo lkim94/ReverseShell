@@ -24,7 +24,7 @@ class Listener:
     def sendData(self, data):
         jsonData = json.dumps(data)
 
-        self.agentSocket.send(jsonData.encode())
+        self.agentSocket.send(jsonData.encode("utf-8"))
     # END OF sendData METHOD
 
     # RECEIVE DATA =====
@@ -33,7 +33,7 @@ class Listener:
 
         while (True):
             try:
-                jsonData += self.agentSocket.recv(self.bufferSize).decode()
+                jsonData += self.agentSocket.recv(self.bufferSize).decode("utf-8")
 
                 return json.loads(jsonData)
 
@@ -47,7 +47,7 @@ class Listener:
         data    = file.read()
         dataLen = len(data)
 
-        self.agentSocket.send(str(dataLen).encode())
+        self.agentSocket.send(str(dataLen).encode("utf-8"))
         confirmMsg = self.agentSocket.recv(2)
 
         self.agentSocket.sendall(data)
@@ -66,7 +66,7 @@ class Listener:
             elif (self.operatingSys == "Unix")   : destination = filePath.split("/")[-1]
         elif (len(cmd_list) == 3): destination = cmd_list[-1]
 
-        dataSize = int(self.agentSocket.recv(self.bufferSize).decode())
+        dataSize = int(self.agentSocket.recv(self.bufferSize).decode("utf-8"))
         self.agentSocket.send(b"OK")
 
         file      = open(destination, "wb")
